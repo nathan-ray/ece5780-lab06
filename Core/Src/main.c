@@ -47,7 +47,7 @@ int main(void)
 	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET); // Start PC7 reset
 	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_RESET); // Start PC6 reset
 	
-	
+	/*
 	// enable ADC in RCC
 	__HAL_RCC_ADC1_CLK_ENABLE();
 	// initialize PC0 to analog mode
@@ -112,6 +112,49 @@ int main(void)
 			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_RESET);
 		}
   }
+	*/
+	
+	// ###########################################
+	// PART 2
+	// ###########################################
+	// enable DAC1 RCC
+	__HAL_RCC_DAC1_CLK_ENABLE();
+	
+	// enable PA4
+	GPIOA->MODER |= (1 << 9);
+	GPIOA->MODER |= (1 << 8);
+	
+	// DAC software trigger mode
+	DAC1->CR |= (1 << 5);
+	DAC1->CR |= (1 << 4);
+	DAC1->CR |= (1 << 3);
+	
+	// enable DAC channel 0
+	DAC1->CR |= (1 << 0);
+	
+	// Sine Wave: 8-bit, 32 samples/cycle
+	const uint8_t sine_table[32] = {127,151,175,197,216,232,244,251,254,251,244,
+	232,216,197,175,151,127,102,78,56,37,21,9,2,0,2,9,21,37,56,78,102};
+	// Triangle Wave: 8-bit, 32 samples/cycle
+	const uint8_t triangle_table[32] = {0,15,31,47,63,79,95,111,127,142,158,174,
+	190,206,222,238,254,238,222,206,190,174,158,142,127,111,95,79,63,47,31,15};
+	// Sawtooth Wave: 8-bit, 32 samples/cycle
+	const uint8_t sawtooth_table[32] = {0,7,15,23,31,39,47,55,63,71,79,87,95,103,
+	111,119,127,134,142,150,158,166,174,182,190,198,206,214,222,230,238,246};
+	// Square Wave: 8-bit, 32 samples/cycle
+	const uint8_t square_table[32] = {254,254,254,254,254,254,254,254,254,254,
+	254,254,254,254,254,254,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+		
+	int i = 0;
+		
+	while (1) {
+		DAC1->DHR8R1 = sine_table[i];
+		i++;
+		if (i > 31) i = 0;
+		HAL_Delay(1);
+	}
+	
+	
 }
 
 /**
