@@ -54,8 +54,6 @@ int main(void)
 	GPIOC->MODER |= (1 << 0);
 	GPIOC->MODER |= (1 << 1);
 	
-
-	
 	// resolution to 8 bits
 	ADC1->CFGR1 |= (1 << 4);
 	ADC1->CFGR1 &= ~(1 << 3);
@@ -153,7 +151,6 @@ int main(void)
 		if (i > 31) i = 0;
 		HAL_Delay(1);
 	}
-	
 	
 }
 
