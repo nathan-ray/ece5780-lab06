@@ -19,42 +19,8 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 
-/* Private includes ----------------------------------------------------------*/
-/* USER CODE BEGIN Includes */
-
-/* USER CODE END Includes */
-
-/* Private typedef -----------------------------------------------------------*/
-/* USER CODE BEGIN PTD */
-
-/* USER CODE END PTD */
-
-/* Private define ------------------------------------------------------------*/
-/* USER CODE BEGIN PD */
-
-/* USER CODE END PD */
-
-/* Private macro -------------------------------------------------------------*/
-/* USER CODE BEGIN PM */
-
-/* USER CODE END PM */
-
-/* Private variables ---------------------------------------------------------*/
-
-/* USER CODE BEGIN PV */
-
-/* USER CODE END PV */
-
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
-/* USER CODE BEGIN PFP */
-
-/* USER CODE END PFP */
-
-/* Private user code ---------------------------------------------------------*/
-/* USER CODE BEGIN 0 */
-
-/* USER CODE END 0 */
 
 /**
   * @brief  The application entry point.
@@ -62,40 +28,90 @@ void SystemClock_Config(void);
   */
 int main(void)
 {
-  /* USER CODE BEGIN 1 */
 
-  /* USER CODE END 1 */
-
-  /* MCU Configuration--------------------------------------------------------*/
-
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
-
-  /* USER CODE BEGIN Init */
-
-  /* USER CODE END Init */
-
-  /* Configure the system clock */
   SystemClock_Config();
+	__HAL_RCC_GPIOC_CLK_ENABLE(); // Enable the GPIOC clock in the RCC
+	// GREEN  -> 9
+	// ORANGE -> 8
+	// BLUE		-> 7
+	// RED		-> 6
+	// Set up a configuration struct to pass to the initialization function
+	GPIO_InitTypeDef initStr = {GPIO_PIN_8 | GPIO_PIN_9 | GPIO_PIN_6 | GPIO_PIN_7,
+	GPIO_MODE_OUTPUT_PP,
+	GPIO_SPEED_FREQ_LOW,
+	GPIO_NOPULL};
+	HAL_GPIO_Init(GPIOC, &initStr); // Initialize pins PC6, PC7, PC8 & PC9
+	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_RESET); // Start PC9 reset
+	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, GPIO_PIN_RESET); // Start PC8 reset
+	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET); // Start PC7 reset
+	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_RESET); // Start PC6 reset
+	
+	
+	// enable ADC in RCC
+	__HAL_RCC_ADC1_CLK_ENABLE();
+	// initialize PC0 to analog mode
+	GPIOC->MODER |= (1 << 0);
+	GPIOC->MODER |= (1 << 1);
+	
 
-  /* USER CODE BEGIN SysInit */
-
-  /* USER CODE END SysInit */
-
-  /* Initialize all configured peripherals */
-  /* USER CODE BEGIN 2 */
-
-  /* USER CODE END 2 */
-
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
+	
+	// resolution to 8 bits
+	ADC1->CFGR1 |= (1 << 4);
+	ADC1->CFGR1 &= ~(1 << 3);
+	// continuous conversion
+	ADC1->CFGR1 |= (1 << 13);
+	// disable hardware trigger
+	ADC1->CFGR1 &= ~(1 << 11);
+	ADC1->CFGR1 &= ~(1 << 10);
+	// select channel PC0 -> ADC_IN10
+	ADC1->CHSELR |= (1 << 10);
+	// makes sure ADC is first disabled and DMAEN is 0
+	ADC1->CR &= ~(1 << 0);
+	ADC1->CFGR1 &= ~(1 << 0);
+	ADC1->CR |= (1 << 31);	// calibrate ADC
+	
+	// wait until calibration is done (ADCAL = 0)
+	while ((ADC1->CR >> 31) & 1) {
+		HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_6);
+		HAL_Delay(100);
+	}
+	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_RESET);
+	
+	// enable ADC
+	ADC1->CR |= (1 << 0);
+	// start ADC
+	ADC1->CR |= (1 << 2);
+	
+	uint16_t data;
   while (1)
   {
-    /* USER CODE END WHILE */
-
-    /* USER CODE BEGIN 3 */
+		data = ADC1->DR;
+		if (data > 1) {
+			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_SET);
+		}
+		else {
+			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_RESET);
+		}
+		if (data > 75) {
+			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, GPIO_PIN_SET);
+		}
+		else {
+			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, GPIO_PIN_RESET);
+		}
+		if (data > 175) {
+			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_SET);
+		}
+		else {
+			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET);
+		}
+		if (data > 250) {
+			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_SET);
+		}
+		else {
+			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_RESET);
+		}
   }
-  /* USER CODE END 3 */
 }
 
 /**
